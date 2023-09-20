@@ -66,7 +66,7 @@ app.post("/api/webhook", async (req, res) => {
       }
     }
 
-    // if (F
+    // if (
     //   req?.body?.event_name === "user_send_text" ||
     //   req?.body?.event_name === "oa_send_text"
     // ) {
