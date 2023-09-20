@@ -4,10 +4,10 @@ const bodyParser = require("body-parser");
 const { rError } = require("./utils/respones");
 const dotenv = require("dotenv");
 const moment = require("moment-timezone");
+const constants = require("./utils/constants");
 
 const morgan = require("morgan");
 const { GoogleSpreadsheet } = require("google-spreadsheet");
-const { format, toDate } = require("date-fns");
 
 global.APP = __dirname;
 dotenv.config();
@@ -24,20 +24,16 @@ app.get("/api/webhook", async (req, res) => {
   return res.status(200).json({ array: [] });
 });
 
-app.post("/api/webhook", async (req, res) => {
+app.post("/api/webhook", async (req, res, next) => {
   try {
-    const doc = new GoogleSpreadsheet(
-      /// Thêm sheet Id
-      "Sheet Id "
-    );
+    const doc = new GoogleSpreadsheet(constants.SHEET_ID);
 
     await doc.useServiceAccountAuth({
-
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
       private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
     });
 
-    const info = await doc.loadInfo(); // loads document properties and worksheets
+    await doc.loadInfo(); // loads document properties and worksheets
     const sheet = doc.sheetsByIndex[0];
     const messageObject = {
       event: req.body?.event_name,
@@ -66,13 +62,6 @@ app.post("/api/webhook", async (req, res) => {
       }
     }
 
-    // if (
-    //   req?.body?.event_name === "user_send_text" ||
-    //   req?.body?.event_name === "oa_send_text"
-    // ) {
-    //   await sheet.addRows([messageObject]);
-    // }
-
     if (
       req?.body?.event_name === "user_send_image" ||
       req?.body?.event_name === "oa_send_image" ||
@@ -91,7 +80,6 @@ app.post("/api/webhook", async (req, res) => {
       ]);
     }
 
-
     if (req.body.event_name === "user_send_location") {
       var location = req.body.message.attachments[0].payload.coordinates;
       await sheet.addRows([
@@ -105,11 +93,11 @@ app.post("/api/webhook", async (req, res) => {
 
     return res.status(200).json({ message: "webhook" });
   } catch (error) {
-    console.log("error", error);
-    console.log("error", error);
+    next(error);
   }
 });
 
+// eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
   const { message, code, subcode, errorItems, error } = err;
 
